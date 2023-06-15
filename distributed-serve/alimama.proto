@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package alimama.proto;
+
+message SliceRequest {
+  uint64 slice_partition = 1;
+  uint64 data_start = 2;
+  uint64 data_len = 3;
+}
+
+message Request {
+  repeated SliceRequest slice_request = 1;
+  string model_version = 2;
+}
+
+message Response {
+  // success return 0, error return -1
+  int32 status = 1;
+  repeated bytes slice_data = 2;
+}
+
+service ModelService {
+  rpc Get(Request) returns (Response) {}
+}
+
+service InterNodeService {
+  rpc Fetch(Request) returns (Response) {}
+}
