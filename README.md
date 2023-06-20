@@ -14,4 +14,4 @@
 
 分数：
 
-<img src="images/1.png" height="65%" width="65%">
+<img src="images/1.jpg" height="65%" width="65%">
