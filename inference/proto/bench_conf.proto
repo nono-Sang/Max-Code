@@ -1,0 +1,37 @@
+syntax = "proto2";
+
+package benchmark;
+
+message BenchModelConfig {
+    // model name
+    required string name = 1;
+
+    // tf model frozen graph
+    required string frozen_graph = 2;
+    // tf session init options
+    optional string config_proto = 3;
+    // tf session run options
+    optional string run_options = 4;
+
+    required string sample_file = 5;
+
+    // predictor num: num of requests processed simultaneously 
+    required int32 predictor_num = 7;
+    // qps, negtive represents max qps
+    optional int32 qps = 8 [default = -1];
+    // cold switching
+    optional bool cold_switching = 9 [default = false];
+    // simulate model switch: interval in seconds, 0 represents no switch
+    optional int32 switch_interval = 10 [default = 0];
+}
+
+message BenchmarkConfig {
+    // bench model config
+    repeated BenchModelConfig bench_model_config = 1;
+    // bench thread count
+    required int32 bench_thread_count = 2;
+    // bench duration in seconds
+    required int32 duration = 3;
+    // max queue size before dropping requests, if not set do not drop any requests
+    optional int32 max_queue_size = 4 [default = -1];
+}

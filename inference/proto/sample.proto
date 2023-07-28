@@ -1,0 +1,13 @@
+syntax = "proto3";
+option cc_enable_arenas = true;
+
+import "tensorflow/core/protobuf/named_tensor.proto";
+
+message InputsProto {
+  repeated tensorflow.NamedTensorProto input = 1;
+}
+
+message SamplesProto {
+  repeated string output_names = 1;
+  repeated InputsProto sample = 2;
+}
