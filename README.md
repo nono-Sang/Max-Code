@@ -16,7 +16,10 @@
 基于 TensorFlow 的多层 DNN 模型的推理优化
 
 #### 简要思路
-* 提高并发：使用 virtual GPU（即多个 CUDA Stream）
-* 开启 XLA：通过 padding-slicing 来应对动态 shape 的问题
-* 混合精度：保证精度要求的同时加快运算速度
-* 图优化：对计算图做一些等价变换，我们添加了 DeepCopy 算子来实现 zero copy
+提高并发：使用 virtual GPU（即多个 CUDA Stream）。由于推理的计算并不重，加上访存密集型算子的存在，GPU 会存在很多空闲状态。我们通过多个 CUDA Stream 来提升系统的并发性，让 GPU 承担更多的计算负载。
+
+开启 XLA：XLA 是 TensorFlow 自带的用于访存密集型算子的编译器优化引擎。其工作方式大概为：将计算图转为 HLO IR，然后找到可以融合的算子，根据融合模式生成融合 kernel 并进行缓存，这里的融合模式是包含完整 shape 信息的算子序列，所以 XLA 遇到一个融合模式时，首先判断其是否已经缓存，如果没有，才进行编译和缓存。所以，在动态 shape 的场景下，大量的重编译和缓存开销会导致 XLA 不可用。考虑到输入数据的 batchsize 是稳定分布的，我们通过分桶 padding 的方式来解决这个问题。
+
+混合精度：TensorFlow 会将算子分为三类，分别是：(1) Always 算子，确定可以通过 FP16 来加速。(2) Maybe 算子，加速能否抵过数据转换的开销是不确定的。(3) Never 算子，必须使用 FP32 来保证数值稳定性。TensorFlow 通过图转换来完成混合精度，过程大概为：(1) 初始化算子标签；(2) 将被 Never 算子包围的算子的标签修改为 Never；(3) 将被 Always 算子包围的 Maybe 算子的标签修改为 Always；(4) 确定 Always 算子的边界，插入 FP16 或 FP32 Cast 算子。 
+
+图优化：对计算图做一些等价变换，我们在输入节点后插入 DeepCopy 算子来充当 Pinned Memory，以实现零拷贝异步数据传输。
